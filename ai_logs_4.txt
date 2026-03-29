@@ -1,0 +1,30 @@
+ai-agent-1  | INFO:     172.21.0.2:40780 - "GET /metrics/ HTTP/1.1" 200 OK
+ai-agent-1  | INFO:     172.21.0.2:48070 - "GET /metrics HTTP/1.1" 307 Temporary Redirect
+ai-agent-1  | INFO:     172.21.0.2:48070 - "GET /metrics/ HTTP/1.1" 200 OK
+ai-agent-1  | INFO:     172.21.0.2:50384 - "GET /metrics HTTP/1.1" 307 Temporary Redirect
+ai-agent-1  | INFO:     172.21.0.2:50384 - "GET /metrics/ HTTP/1.1" 200 OK
+ai-agent-1  | INFO:     172.21.0.2:38294 - "GET /metrics HTTP/1.1" 307 Temporary Redirect
+ai-agent-1  | INFO:     172.21.0.2:38294 - "GET /metrics/ HTTP/1.1" 200 OK
+ai-agent-1  | INFO:     172.21.0.2:53130 - "GET /metrics HTTP/1.1" 307 Temporary Redirect
+ai-agent-1  | INFO:     172.21.0.2:53130 - "GET /metrics/ HTTP/1.1" 200 OK
+ai-agent-1  | INFO:     172.21.0.2:50496 - "GET /metrics HTTP/1.1" 307 Temporary Redirect
+ai-agent-1  | INFO:     172.21.0.2:50496 - "GET /metrics/ HTTP/1.1" 200 OK
+ai-agent-1  | INFO:     172.21.0.2:40648 - "GET /metrics HTTP/1.1" 307 Temporary Redirect
+ai-agent-1  | INFO:     172.21.0.2:40648 - "GET /metrics/ HTTP/1.1" 200 OK
+ai-agent-1  | INFO:     192.168.65.1:26652 - "OPTIONS /triage HTTP/1.1" 200 OK
+ai-agent-1  | 
+ai-agent-1  | [1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+ai-agent-1  | LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+ai-agent-1  | 
+ai-agent-1  | 
+ai-agent-1  | [1;31mProvider List: https://docs.litellm.ai/docs/providers[0m
+ai-agent-1  | 
+ai-agent-1  | INFO:     192.168.65.1:26652 - "POST /triage HTTP/1.1" 200 OK
+ai-agent-1  | INFO:     172.21.0.2:44864 - "GET /metrics HTTP/1.1" 307 Temporary Redirect
+ai-agent-1  | INFO:     172.21.0.2:44864 - "GET /metrics/ HTTP/1.1" 200 OK
+ai-agent-1  | INFO:     172.21.0.2:47408 - "GET /metrics HTTP/1.1" 307 Temporary Redirect
+ai-agent-1  | INFO:     172.21.0.2:47408 - "GET /metrics/ HTTP/1.1" 200 OK
+ai-agent-1  | INFO:     172.21.0.2:60564 - "GET /metrics HTTP/1.1" 307 Temporary Redirect
+ai-agent-1  | INFO:     172.21.0.2:60564 - "GET /metrics/ HTTP/1.1" 200 OK
+ai-agent-1  | INFO:     172.21.0.2:55512 - "GET /metrics HTTP/1.1" 307 Temporary Redirect
+ai-agent-1  | INFO:     172.21.0.2:55512 - "GET /metrics/ HTTP/1.1" 200 OK

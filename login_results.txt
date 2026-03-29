@@ -1,0 +1,4 @@
+✅ Login successful for admin. Role returned: SUPER_USER
+✅ Login successful for manager. Role returned: MANAGER
+✅ Login successful for owner. Role returned: OWNER
+✅ Login successful for vendor1. Role returned: VENDOR

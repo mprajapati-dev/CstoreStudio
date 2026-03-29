@@ -1,0 +1,7 @@
+{
+    "python.terminal.useEnvFile": true,
+    "chat.tools.terminal.autoApprove": {
+        "EOF": true,
+        "exit": true
+    }
+}

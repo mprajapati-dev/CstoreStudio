@@ -1,0 +1,4 @@
+TODO: 
+1. Use LangGraph to manage these transitions on the backend.
+2. Use Next.js 15 Server Actions or API routes to trigger these state changes.
+3. Update states in main.py: OPEN, AWAITING_BIDS, PENDING_APPROVAL, IN_PROGRESS, PENDING_VALIDATION, AWAITING_PAYMENT, CLOSED.

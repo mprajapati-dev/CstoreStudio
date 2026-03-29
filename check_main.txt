@@ -1,0 +1,114 @@
+import os
+import uuid
+import boto3
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import TypedDict
+from langgraph.graph import StateGraph, END
+import litellm
+import time
+from prometheus_client import make_asgi_app, Summary, Counter
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Prometheus metrics
+triage_latency = Summary('triage_latency_seconds', 'Time spent in visual triage')
+token_usage = Counter('token_usage_total', 'Tokens used by LLMs', ['model'])
+
+app.mount("/metrics", make_asgi_app())
+
+AWS_ENDPOINT_URL = os.getenv("AWS_ENDPOINT_URL", "http://localstack:4566")
+REGION = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+
+dynamodb = boto3.client(
+    'dynamodb',
+    endpoint_url=AWS_ENDPOINT_URL,
+    region_name=REGION,
+    aws_access_key_id='test',
+    aws_secret_access_key='test'
+)
+
+class JobState(TypedDict):
+    job_id: str
+    media_url: str
+    triage_result: str
+    approval_status: str
+
+@triage_latency.time()
+def visual_triage(state: JobState):
+    # Abstract LLM call via LiteLLM to Gemini
+    try:
+        response = litellm.completion(
+            model=os.getenv("LLM_MODEL", "gemini/gemini-pro"), # specific to supported liteLLM naming
+            api_key=os.getenv("GEMINI_API_KEY"),
+            messages=[{"role": "user", "content": f"Analyze this media issue: {state['media_url']}"}]
+        )
+        triage_text = response.choices[0].message.content
+        token_usage.labels(model="gemini").inc(getattr(response.usage, 'total_tokens', 0))
+    except Exception as e:
+        triage_text = "Analysis Failed due to error: " + str(e)
+        
+    state["triage_result"] = triage_text
+    return state
+
+def business_logic(state: JobState):
+    # Dummy logic to parse cost
+    if "expensive" in state["triage_result"].lower():
+        state["approval_status"] = "Needs Owner"
+    else:
+        state["approval_status"] = "Auto-Approve"
+    return state
+
+def persistence(state: JobState):
+    try:
+        dynamodb.put_item(
+            TableName='Jobs',
+            Item={
+                'jobId': {'S': state['job_id']},
+                'mediaUrl': {'S': state.get('media_url', '')},
+                'triageResult': {'S': state.get('triage_result', '')},
+                'approvalStatus': {'S': state.get('approval_status', '')}
+            }
+        )
+    except Exception as e:
+        print(f"DynamoDB Error: {e}")
+    return state
+
+workflow = StateGraph(JobState)
+workflow.add_node("visual_triage", visual_triage)
+workflow.add_node("business_logic", business_logic)
+workflow.add_node("persistence", persistence)
+
+workflow.set_entry_point("visual_triage")
+workflow.add_edge("visual_triage", "business_logic")
+workflow.add_edge("business_logic", "persistence")
+workflow.add_edge("persistence", END)
+
+app_graph = workflow.compile()
+
+class TriageRequest(BaseModel):
+    media_url: str
+
+@app.post("/triage")
+async def start_triage(request: TriageRequest):
+    job_id = str(uuid.uuid4())
+    inputs = JobState(job_id=job_id, media_url=request.media_url, triage_result="", approval_status="")
+    try:
+        result = app_graph.invoke(inputs)
+        return {"job_id": job_id, "status": result["approval_status"], "details": result["triage_result"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+

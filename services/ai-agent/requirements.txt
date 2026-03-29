@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+boto3
+litellm
+langgraph
+prometheus-client
+pydantic-ai
+pytest
+httpx
+pytest-asyncio
+Pillow
+mcp
+langfuse

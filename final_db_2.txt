@@ -1,0 +1,35 @@
+{
+    "Items": [
+        {
+            "approvalStatus": {
+                "S": "Auto-Approve"
+            },
+            "jobId": {
+                "S": "96343535-122d-4b43-9657-2b913b16e8a6"
+            },
+            "mediaUrl": {
+                "S": "http://localhost:4566/cstore-media/uploads/1773944033696-gas_maint.jpg"
+            },
+            "triageResult": {
+                "S": "Analysis Failed due to error: litellm.NotFoundError: GeminiException - {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n"
+            }
+        },
+        {
+            "approvalStatus": {
+                "S": "Auto-Approve"
+            },
+            "jobId": {
+                "S": "0903c758-ff96-4f56-baf9-11436f2b4f4f"
+            },
+            "mediaUrl": {
+                "S": "http://localhost:4566/cstore-media/uploads/1773939734472-gas_maint.jpg"
+            },
+            "triageResult": {
+                "S": "Analysis Failed due to error: litellm.NotFoundError: GeminiException - {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n"
+            }
+        }
+    ],
+    "Count": 2,
+    "ScannedCount": 2,
+    "ConsumedCapacity": null
+}

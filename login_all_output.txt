@@ -1,0 +1,4 @@
+owner: {"username":"owner","role":"OWNER","permissions":["approve_bid","dispatch_payment"]}
+vendor1: {"username":"vendor1","role":"VENDOR","permissions":["submit_invoice","upload_fix","view_assigned"]}
+admin: {"username":"admin","role":"SUPER_USER","permissions":["all"]}
+manager: {"username":"manager","role":"MANAGER","permissions":["create_ticket","verify_repair"]}
