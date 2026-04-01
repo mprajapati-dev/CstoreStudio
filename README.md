@@ -16,7 +16,7 @@ Unlike traditional workflow apps, CstoreStudio treats the **Human as an Exceptio
 ---
 
 ## 🚀 Technical Stack
-* **LLM:** Gemini 3.1 Pro (via LiteLLM gateway).
+* **LLM:** (via LiteLLM gateway).
 * **Orchestration:** LangGraph (Stateful Multi-Agent workflows).
 * **Tooling:** **Model Context Protocol (MCP)** for decoupled access to AWS and local databases.
 * **Frontend:** Next.js 15 (App Router) with Role-Based Access Control (RBAC).
@@ -45,7 +45,7 @@ Unlike traditional workflow apps, CstoreStudio treats the **Human as an Exceptio
 CstoreStudio/
 ├── services/
 │   ├── ui-app/           # Next.js 15 Frontend (Portals for Manager/Owner/Vendor)
-│   ├── ai-agent/         # LangGraph + Gemini Agentic Service
+│   ├── ai-agent/         # LangGraph + Gemini Service (Includes seed_db.py)
 │   └── mcp-server/       # Model Context Protocol (MCP) Tools for AWS/DB
 ├── infrastructure/
 │   ├── localstack/       # S3 & DynamoDB initialization scripts
@@ -58,30 +58,63 @@ CstoreStudio/
 
 ## 🚦 Getting Started (Local Development)
 
-### 1. Initialize Infrastructure
-Ensure Docker is running and launch the emulated AWS stack:
+### 1. Start the Environment
+The most reliable way to launch the stack is using the provided management script. This command handles container builds, waits for LocalStack services to be `ACTIVE`, and executes the initial database seed.
+
+Ensure Docker Desktop is running, then run:
 ```bash
-docker-compose up -d
-# This starts LocalStack, DynamoDB, S3, and Prometheus.
+./manage.sh up
 ```
 
-### 2. Seed the Database
-Initialize your roles (Admin, Manager, Owner, Vendor) and dummy vendors:
+### 2. Seed the Database (Manual/Repeatable)
+To reseed the database at any time:
 ```bash
-python scripts/seed_db.py
+./manage.sh seed
 ```
 
-### 3. Run the Studio
-Use the Gradle wrapper to boot the full stack:
+### 3. Restart or Tear Down
 ```bash
-./gradlew bootRun
+./manage.sh restart   # Full restart (down + up + seed)
+./manage.sh down      # Stop and remove all containers and volumes
 ```
-* **Manager Portal:** `localhost:3000/portal/manager` (manager/manager)
-* **Owner Portal:** `localhost:3000/portal/owner` (owner/owner)
-* **Admin Trace:** `localhost:3000/portal/admin` (admin/admin)
+
+### 4. Access the Portals
+* **Manager Portal:** http://localhost:3000/portal/manager (manager/manager)
+* **Owner Portal:** http://localhost:3000/portal/owner (owner/owner)
+* **Admin Trace:** http://localhost:3000/portal/admin (admin/admin)
+* **Prometheus:** http://localhost:9090
+* **Grafana:** http://localhost:3001
+
+---
+
+## 📝 API Quick Reference
+
+### Create Ticket (POST /tickets)
+```http
+POST /tickets
+{
+	"media_url": "http://localhost:4566/fake.jpg",
+	"category": "GAS",
+	"manager_note": "Test note",
+	"store_id": "ST-101",
+	"asset_id": "A-001"
+}
+```
+Returns: `{ "ticket_id": "...", "status": "OPEN" }`
+
+---
 
 ---
 
 ## 📊 Observability & Trust
 Because the system is autonomous, we use **Langfuse** to provide a "Full Trace" of every agent's thought process. You can see the **Internal Monologue** of the Auditor Agent when it decides whether to trust a vendor's bid or flag it for human review.
 
+System Health Report:
+
+Checks if all 4 Portals (Manager, Owner, Vendor, Admin) are returning 200 OK.
+
+Verifies that LocalStack S3 and DynamoDB are synced.
+
+Checks the latency of the model Triage call.
+
+Outputs a 'Ready for Production' summary in Markdown.

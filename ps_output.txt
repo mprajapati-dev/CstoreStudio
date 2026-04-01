@@ -1,5 +1,0 @@
-NAME                        IMAGE                     COMMAND                  SERVICE      CREATED          STATUS                    PORTS
-cstorestudio-ai-agent-1     cstorestudio-ai-agent     "uvicorn main:app --…"   ai-agent     14 minutes ago   Up 14 minutes             0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp
-cstorestudio-localstack-1   cstorestudio-localstack   "docker-entrypoint.sh"   localstack   14 minutes ago   Up 14 minutes (healthy)   0.0.0.0:4566->4566/tcp, [::]:4566->4566/tcp
-cstorestudio-prometheus-1   cstorestudio-prometheus   "/bin/prometheus --c…"   prometheus   14 minutes ago   Up 14 minutes             0.0.0.0:9090->9090/tcp, [::]:9090->9090/tcp
-cstorestudio-ui-app-1       cstorestudio-ui-app       "docker-entrypoint.s…"   ui-app       14 minutes ago   Up 14 minutes             0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp

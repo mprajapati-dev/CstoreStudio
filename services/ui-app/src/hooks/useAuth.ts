@@ -4,7 +4,7 @@ import { useRouter, usePathname } from 'next/navigation';
 export function useAuth() {
   const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<{username: string, role: string, permissions: string[]} | null>(null);
+  const [user, setUser] = useState<{username: string, role: string, permissions: string[], category?: string, store_id?: string, store_ids?: string[]} | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

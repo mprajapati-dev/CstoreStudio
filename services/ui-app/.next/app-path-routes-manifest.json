@@ -1,0 +1,11 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/api/categories/route": "/api/categories",
+  "/api/vendors/route": "/api/vendors",
+  "/api/upload/route": "/api/upload",
+  "/portal/admin/page": "/portal/admin",
+  "/portal/manager/page": "/portal/manager",
+  "/portal/owner/page": "/portal/owner",
+  "/page": "/",
+  "/portal/vendor/page": "/portal/vendor"
+}

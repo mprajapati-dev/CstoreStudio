@@ -1,0 +1,11 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/categories/route": "app/api/categories/route.js",
+  "/api/vendors/route": "app/api/vendors/route.js",
+  "/api/upload/route": "app/api/upload/route.js",
+  "/portal/admin/page": "app/portal/admin/page.js",
+  "/portal/manager/page": "app/portal/manager/page.js",
+  "/portal/owner/page": "app/portal/owner/page.js",
+  "/page": "app/page.js",
+  "/portal/vendor/page": "app/portal/vendor/page.js"
+}

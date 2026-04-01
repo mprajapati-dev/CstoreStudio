@@ -1,0 +1,98 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  security-check-python:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+    - name: Run Safety Check (Python)
+      run: |
+        cd services/ai-agent
+        pip install safety
+        # We allow this to pass with warnings if needed, or remove || true to enforce
+        safety check -r requirements.txt || echo "Safety threshold reached"
+
+  security-check-node:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    - name: Run npm audit (Node)
+      run: |
+        cd services/ui-app
+        npm install
+        npm audit || echo "NPM vulnerabilities found"
+
+  test:
+    needs: [security-check-python, security-check-node]
+    runs-on: ubuntu-latest
+    
+    services:
+      localstack:
+        image: localstack/localstack:latest
+        env:
+          SERVICES: dynamodb
+          DEFAULT_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+        ports:
+          - 4566:4566
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        cd services/ai-agent
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest httpx pytest-asyncio
+
+    - name: Wait for LocalStack
+      run: |
+        sleep 10
+        curl -s http://localhost:4566/_localstack/health | grep -q "running" || sleep 10
+
+    - name: Initialize LocalStack DynamoDB Tables
+      env:
+        AWS_ACCESS_KEY_ID: test
+        AWS_SECRET_ACCESS_KEY: test
+        AWS_DEFAULT_REGION: us-east-1
+      run: |
+        chmod +x infrastructure/localstack/init-aws.sh
+        ./infrastructure/localstack/init-aws.sh
+
+    - name: Run Pytest Suite & MCP Health Check
+      env:
+        AWS_DEFAULT_REGION: us-east-1
+        AWS_ENDPOINT_URL: http://localhost:4566
+        GEMINI_API_KEY: dummy_test_key
+      run: |
+        cd services/ai-agent
+        python -m pytest tests/ -v
+        
+    - name: Run Token Cost Tracking Check
+      env:
+        AWS_DEFAULT_REGION: us-east-1
+        AWS_ENDPOINT_URL: http://localhost:4566
+      run: |
+        cd services/ai-agent
+        python tests/check_token_cost.py

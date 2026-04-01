@@ -1,5 +1,5 @@
 "use client";
-
+import { logoutUser } from '@/services/auth';
 import { useEffect, useState } from "react";
 import { fetchTickets } from "../../actions";
 import { Copy, Terminal, Activity, ArrowRightLeft } from "lucide-react";
@@ -25,15 +25,16 @@ export default function AdminDashboard() {
           </h1>
           <p className="mt-2 text-sm text-gray-500">Live inspection of all ticket states & JSON payloads</p>
         </div>
-        <div className="flex gap-4">
-            <a href="http://localhost:8000/metrics" target="_blank" className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors">
-              <Activity className="w-4 h-4" />
-              Prometheus Metrics
-            </a>
-            <a href="http://localhost:3000/api/langfuse" target="_blank" className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
-              <ArrowRightLeft className="w-4 h-4" />
-              Langfuse Traces
-            </a>
+        <div className="flex gap-4 items-center">
+          <button onClick={logoutUser} className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-4 py-2 rounded-lg shadow-sm">Logout</button>
+          <a href="http://localhost:8000/metrics" target="_blank" className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors">
+            <Activity className="w-4 h-4" />
+            Prometheus Metrics
+          </a>
+          <a href="http://localhost:3000/api/langfuse" target="_blank" className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
+            <ArrowRightLeft className="w-4 h-4" />
+            Langfuse Traces
+          </a>
         </div>
       </div>
 

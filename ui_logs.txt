@@ -1,6 +1,0 @@
-ui-app-1  |    ▲ Next.js 15.5.13
-ui-app-1  |    - Local:        http://335a671c6a5a:3000
-ui-app-1  |    - Network:      http://335a671c6a5a:3000
-ui-app-1  | 
-ui-app-1  |  ✓ Starting...
-ui-app-1  |  ✓ Ready in 340ms

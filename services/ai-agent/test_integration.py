@@ -155,3 +155,120 @@ async def test_mcp_post_bid():
     assert item["vendorId"] == vendor_id
     assert float(item["amount"]) == 450.00
     assert item["status"] == "PENDING"
+
+@pytest.mark.asyncio
+async def test_mcp_multitenant_isolation():
+    """
+    Test Case: Ensure that a Manager from 'Store A' cannot see or modify 
+    a Ticket belonging to 'Store B' via the MCP tools.
+    """
+    dynamodb = get_dynamo()
+    ticket_table = dynamodb.Table('Tickets')
+    
+    # Store B's private ticket
+    ticket_id_store_b = f"ticket-b-{uuid.uuid4()}"
+    ticket_table.put_item(Item={
+        "ticketId": ticket_id_store_b,
+        "storeId": "Store-B",
+        "status": "OPEN",
+        "managerNote": "Leaky roof"
+    })
+    
+    # 1. Store A tries to GET Store B's ticket context using MCP
+    get_res = await handle_call_tool("get_ticket_context", {
+        "ticket_id": ticket_id_store_b,
+        "caller_store_id": "Store-A"
+    })
+    
+    get_data = json.loads(get_res[0].text)
+    assert "error" in get_data
+    assert "Unauthorized" in get_data["error"]
+    
+    # 2. Store A tries to UPDATE Store B's ticket state using MCP
+    update_res = await handle_call_tool("update_status", {
+        "ticket_id": ticket_id_store_b,
+        "new_status": "CLOSED",
+        "caller_store_id": "Store-A"
+    })
+    
+    update_data = json.loads(update_res[0].text)
+    assert "error" in update_data
+    assert "Unauthorized" in update_data["error"]
+    
+    # Verify the item in DynamoDB remained untouched natively
+    verify_resp = ticket_table.get_item(Key={"ticketId": ticket_id_store_b})
+    assert verify_resp["Item"]["status"] == "OPEN"
+
+@pytest.mark.asyncio
+async def test_vendor_bidding_workflow_concurrency():
+    """
+    Test Case: Simulate 3 vendors submitting bids simultaneously.
+    Ensure atomic updates in DynamoDB and correct sorting by Best Value.
+    """
+    import asyncio
+    dynamodb = get_dynamo()
+    ticket_table = dynamodb.Table('Tickets')
+    
+    # Create an initial ticket
+    ticket_id = f"ticket-bidding-{uuid.uuid4()}"
+    store_id = "Store-BidTest"
+    ticket_table.put_item(Item={
+        "ticketId": ticket_id,
+        "storeId": store_id,
+        "status": "OPEN",
+        "managerNote": "Fix AC",
+        "bids": []
+    })
+    
+    # Simulate concurrent bid requests
+    async def make_bid(vendor_id, amount, eta_days):
+        return await handle_call_tool("submit_bid", {
+            "ticket_id": ticket_id,
+            "vendor_id": vendor_id,
+            "bid_amount": amount,
+            "eta_days": eta_days
+        })
+
+    # vendor1: amount=500, eta=2
+    # vendor2: amount=300, eta=5
+    # vendor3: amount=450, eta=1
+    
+    res1, res2, res3 = await asyncio.gather(
+        make_bid("vendor1", 500, 2),
+        make_bid("vendor2", 300, 5),
+        make_bid("vendor3", 450, 1)
+    )
+    
+    # 1. Assert: Ensure the Tickets table appended all three bids without overwriting
+    verify_resp = ticket_table.get_item(Key={"ticketId": ticket_id})
+    bids = verify_resp.get("Item", {}).get("bids", [])
+    
+    assert len(bids) == 3, f"Expected 3 bids, but found {len(bids)}. Concurrency overwritten data!"
+    
+    vendor_ids = [b["vendor_id"] for b in bids]
+    assert "vendor1" in vendor_ids
+    assert "vendor2" in vendor_ids
+    assert "vendor3" in vendor_ids
+
+    # 2. Assert: Verify the Owner portal sorting algorithm (Best Value = lowest amount + penalty per day)
+    # Assuming the algorithm returns them sorted or we verify the get_ticket_context returns sorted
+    context_res = await handle_call_tool("get_ticket_context", {
+        "ticket_id": ticket_id,
+        "caller_store_id": store_id
+    })
+    
+    ticket_data = json.loads(context_res[0].text)
+    returned_bids = ticket_data.get("bids", [])
+    
+    assert len(returned_bids) == 3
+    
+    # Expected values calculation: formula = amount + (eta_days * 50)
+    # vendor1 => 500 + (2*50) = 600
+    # vendor2 => 300 + (5*50) = 550
+    # vendor3 => 450 + (1*50) = 500
+    # Sorted order (lowest value first): vendor3, vendor2, vendor1
+    
+    returned_vendor_ids = [b["vendor_id"] for b in returned_bids]
+    assert returned_vendor_ids == ["vendor3", "vendor2", "vendor1"], f"Sort failed. Expected ['vendor3', 'vendor2', 'vendor1'], got {returned_vendor_ids}"
+
+    

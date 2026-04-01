@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { loginUser } from '@/services/auth';
 
 export default function Home() {
   const router = useRouter();
@@ -15,37 +16,15 @@ export default function Home() {
     setLoading(true);
     
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      
-      const data = await res.json();
-      
-      if (!res.ok) {
-        setError(data.detail || 'Login failed');
-        setLoading(false);
-        return;
-      }
-      
-      const rawRole = (data.role || '').toUpperCase().trim();
-      
-      let standardRole = 'UNKNOWN';
-      if (rawRole.includes('ADMIN') || rawRole.includes('SUPER')) {
-        standardRole = 'ADMIN';
-      } else if (rawRole.includes('MANAGER')) {
-        standardRole = 'MANAGER';
-      } else if (rawRole.includes('OWNER')) {
-        standardRole = 'OWNER';
-      } else if (rawRole.includes('VENDOR')) {
-        standardRole = 'VENDOR';
-      }
+      const userData = await loginUser(username, password);
+      const standardRole = userData.role;
 
       // Ensure the standard role is passed into localStorage so the whole app knows
-      const normalizedData = { ...data, role: standardRole };
-      localStorage.setItem('user', JSON.stringify(normalizedData));
+      localStorage.setItem('user', JSON.stringify(userData));
       
+      // Set cookie for middleware
+      document.cookie = `userRole=${standardRole}; path=/`;
+
       // Redirect based on standard role
       switch (standardRole) {
         case 'ADMIN':
@@ -61,11 +40,11 @@ export default function Home() {
           router.push('/portal/vendor');
           break;
         default:
-          setError('Unknown role: ' + rawRole);
+          setError('Unknown standard role: ' + standardRole);
           break;
       }
-    } catch (err) {
-      setError('Connection error');
+    } catch (err: any) {
+      setError(err.message || 'Connection error');
     }
     setLoading(false);
   };

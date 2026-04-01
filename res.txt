@@ -1,7 +1,0 @@
-
-
-
-RESULT== {"url":"http://localhost:4566/cstore-media/uploads/1773890744679-test.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=test%2F20260319%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260319T032544Z&X-Amz-Expires=3600&X-Amz-Signature=17af9796a85e7707bfb082499c3b33765ec52a7dbb87fa5faab8fca6cf1a87cb&X-Amz-SignedHeaders=host&x-amz-checksum-crc32=AAAAAA%3D%3D&x-amz-sdk-checksum-algorithm=CRC32&x-id=PutObject","key":"uploads/1773890744679-test.png"} ==RESULT
-
-
-

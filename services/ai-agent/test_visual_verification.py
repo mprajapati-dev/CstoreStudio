@@ -75,3 +75,64 @@ def test_visual_verification_failure(mock_litellm):
     assert final_state["status"] == "VALIDATION_FAILED"
     assert final_state["audit_flag"] == "MANAGER_NOTIFICATION_TRIGGERED"
     mock_litellm.assert_called_once()
+
+def test_visual_verification_fraud_identical_photos(mock_litellm):
+    """
+    Test Case: Vendor tries to cheat by submitting the same photo for 'Before' and 'After'.
+    Asserts verified: false and the reasoning string is generated.
+    """
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = '```json\n{"verified": false, "confidence": 1.0, "reasoning": "The completion photo is identical to the initial problem photo. No change detected."}\n```'
+    mock_litellm.return_value = mock_response
+
+    initial_state = {
+        "ticket_id": "test-visual-fraud-001",
+        "status": "PENDING_VALIDATION",
+        "initial_media_url": SAMPLE_B64_IMAGE,
+        "media_url": SAMPLE_B64_IMAGE,
+        "manager_note": "Vendor submitted fix",
+        "ai_diagnosis": "Broken Pump",
+        "ai_estimated_cost": 500.0,
+        "vendor_bid": 500.0,
+        "audit_flag": "OK",
+        "action": "SUBMIT_FIX"
+    }
+
+    config = {"configurable": {"thread_id": "fraud-test"}}
+    final_state = app_graph.invoke(initial_state, config=config)
+
+    assert final_state["status"] == "VALIDATION_FAILED"
+    assert "identical" in final_state["manager_note"].lower() or "no change" in final_state["manager_note"].lower()
+    assert final_state["audit_flag"] == "MANAGER_NOTIFICATION_TRIGGERED"
+    mock_litellm.assert_called_once()
+
+
+def test_visual_verification_success_fixed_issue(mock_litellm):
+    """
+    Test Case: Vendor submits a valid 'After' photo showing the problem is resolved.
+    Asserts the status moves to AWAITING_PAYMENT.
+    """
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = '```json\n{"verified": true, "confidence": 0.98, "reasoning": "The pipe is now dry and patched. The repair looks complete."}\n```'
+    mock_litellm.return_value = mock_response
+
+    initial_state = {
+        "ticket_id": "test-visual-success-002",
+        "status": "PENDING_VALIDATION",
+        "initial_media_url": "data:image/png;base64,mock_leak_image_data",
+        "media_url": "data:image/png;base64,mock_dry_patched_image_data",
+        "manager_note": "Vendor submitted fix",
+        "ai_diagnosis": "Pipe Leak",
+        "ai_estimated_cost": 200.0,
+        "vendor_bid": 200.0,
+        "audit_flag": "OK",
+        "action": "SUBMIT_FIX"
+    }
+
+    config = {"configurable": {"thread_id": "success-test"}}
+    final_state = app_graph.invoke(initial_state, config=config)
+
+    assert final_state["status"] == "AWAITING_PAYMENT"
+    mock_litellm.assert_called_once()

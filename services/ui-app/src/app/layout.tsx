@@ -1,6 +1,5 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import AuthWrapper from '@/components/AuthWrapper'
 
 export const metadata: Metadata = {
   title: 'CstoreStudio',
@@ -15,9 +14,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthWrapper>
-          {children}
-        </AuthWrapper>
+        {children}
       </body>
     </html>
   )

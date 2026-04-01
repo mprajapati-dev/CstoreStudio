@@ -107,3 +107,44 @@ def test_graph_interrupt(mock_litellm):
     
     # owner_approval step sets status to IN_PROGRESS upon action=APPROVE
     assert final_state_after_resume["status"] == "IN_PROGRESS"
+
+def test_resume_logic_no_triage_rerun(mock_litellm):
+    """
+    Test the LangGraph Checkpointer and Resume logic.
+    Simulate shutting down the AI-agent (e.g., memory reset)
+    and verify that resuming a PENDING_APPROVAL ticket 
+    routes directly to Owner Approval without re-running Triage,
+    saving API costs.
+    """
+    from agent_graph import builder
+    from langgraph.checkpoint.memory import MemorySaver
+
+    # 1. Simulate process restart by compiling a fresh graph with a blank memory
+    fresh_memory = MemorySaver()
+    fresh_graph = builder.compile(checkpointer=fresh_memory, interrupt_before=["owner_approval"])
+
+    # 2. Inject the state exactly as main.py would read from DynamoDB after a shutdown
+    resumed_state = {
+        "ticket_id": "test-resume-004",
+        "status": "PENDING_APPROVAL",
+        "media_url": "https://fake.url",
+        "ai_diagnosis": "Broken register",
+        "ai_estimated_cost": 250.0,
+        "vendor_bid": 300.0,
+        "audit_flag": "OK",
+        "action": "APPROVE"  # Owner Approve event
+    }
+    
+    config = {"configurable": {"thread_id": "thread-test-resume-004"}}
+    
+    # 3. Invoke the graph 
+    final_state = fresh_graph.invoke(resumed_state, config=config)
+
+    # 4. Assertions
+    # Status should seamlessly transition to IN_PROGRESS
+    assert final_state["status"] == "IN_PROGRESS"
+    
+    # The Triage node and Auditor node (which call the LLM) should NOT have been invoked
+    # since the router uses the state.status="PENDING_APPROVAL" to drop directly into owner_approval
+    mock_litellm.assert_not_called()
+

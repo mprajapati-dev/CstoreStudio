@@ -50,9 +50,10 @@ async def handle_list_tools() -> list[types.Tool]:
                 "properties": {
                     "ticket_id": {"type": "string"},
                     "vendor_id": {"type": "string"},
-                    "amount": {"type": "number"}
+                    "amount": {"type": "number"},
+                    "eta_days": {"type": "number"}
                 },
-                "required": ["ticket_id", "vendor_id", "amount"]
+                "required": ["ticket_id", "vendor_id", "amount", "eta_days"]
             }
         ),
         types.Tool(
@@ -61,7 +62,8 @@ async def handle_list_tools() -> list[types.Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "ticket_id": {"type": "string"}
+                    "ticket_id": {"type": "string"},
+                    "caller_store_id": {"type": "string"}
                 },
                 "required": ["ticket_id"]
             }
@@ -73,7 +75,8 @@ async def handle_list_tools() -> list[types.Tool]:
                 "type": "object",
                 "properties": {
                     "ticket_id": {"type": "string"},
-                    "new_status": {"type": "string", "description": "The new status (e.g., AWAITING_BIDS, IN_PROGRESS, CLOSED)"}
+                    "new_status": {"type": "string", "description": "The new status (e.g., AWAITING_BIDS, IN_PROGRESS, CLOSED)"},
+                    "caller_store_id": {"type": "string"}
                 },
                 "required": ["ticket_id", "new_status"]
             }
@@ -103,30 +106,53 @@ async def handle_call_tool(
         ticket_id = arguments.get("ticket_id")
         vendor_id = arguments.get("vendor_id")
         amount = arguments.get("amount")
+        eta_days = arguments.get("eta_days")
         
         import uuid
         bid_id = str(uuid.uuid4())
-        table = dynamodb.Table("Bids")
-        table.put_item(
-            Item={
-                "bidId": bid_id,
-                "ticketId": ticket_id,
-                "vendorId": vendor_id,
-                "amount": Decimal(str(amount)),
-                "availability": "Immediate", # default for mock
-                "status": "PENDING"
-            }
-        )
+        
+        ticket_table = dynamodb.Table("Tickets")
+        new_bid = {
+            "bidId": bid_id,
+            "vendor_id": vendor_id,
+            "amount": Decimal(str(amount)),
+            "eta_days": Decimal(str(eta_days)),
+            "status": "PENDING"
+        }
+        try:
+            # Atomic update to append to the list
+            ticket_table.update_item(
+                Key={"ticketId": ticket_id},
+                UpdateExpression="SET bids = list_append(if_not_exists(bids, :empty_list), :new_bid)",
+                ExpressionAttributeValues={
+                    ":empty_list": [],
+                    ":new_bid": [new_bid]
+                },
+                ReturnValues="UPDATED_NEW"
+            )
+        except Exception as e:
+            return [types.TextContent(type="text", text=json.dumps({"error": str(e)}))]
+            
         return [types.TextContent(type="text", text=json.dumps({"success": True, "bid_id": bid_id}))]
 
     elif name == "get_ticket_context":
         ticket_id = arguments.get("ticket_id")
+        caller_store_id = arguments.get("caller_store_id")
         table = dynamodb.Table("Tickets")
         response = table.get_item(Key={"ticketId": ticket_id})
         ticket = response.get("Item", {})
         
         if not ticket:
             return [types.TextContent(type="text", text=json.dumps({"error": f"Ticket {ticket_id} not found"}))]
+            
+        # Multi-Tenant Validation
+        if caller_store_id and ticket.get("storeId") and ticket.get("storeId") != caller_store_id:
+            return [types.TextContent(type="text", text=json.dumps({"error": "Unauthorized access to ticket from another store"}))]
+            
+        # Sort bids by 'Best Value' => low cost + low wait time penalty (50 per day)
+        bids = ticket.get("bids", [])
+        if bids:
+            ticket["bids"] = sorted(bids, key=lambda b: float(b.get("amount", 0)) + float(b.get("eta_days", 0)) * 50)
         
         # Pull history for the same store by scanning (naive)
         store_id = ticket.get("storeId")
@@ -153,7 +179,14 @@ async def handle_call_tool(
     elif name == "update_status":
         ticket_id = arguments.get("ticket_id")
         new_status = arguments.get("new_status")
+        caller_store_id = arguments.get("caller_store_id")
         table = dynamodb.Table("Tickets")
+        
+        # Multi-Tenant Validation
+        if caller_store_id:
+            ticket = table.get_item(Key={"ticketId": ticket_id}).get("Item", {})
+            if ticket and ticket.get("storeId") and ticket.get("storeId") != caller_store_id:
+                return [types.TextContent(type="text", text=json.dumps({"error": "Unauthorized access to ticket from another store"}))]
         
         try:
             table.update_item(
@@ -194,4 +227,3 @@ def create_mcp_app():
         await sse.handle_post_message(request.scope, request.receive, request._send)
         
     return app
-

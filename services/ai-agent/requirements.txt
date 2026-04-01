@@ -1,4 +1,4 @@
-fastapi
+fastapi>=0.100
 uvicorn
 pydantic
 pydantic-settings
@@ -8,7 +8,8 @@ langgraph
 prometheus-client
 pydantic-ai
 pytest
-httpx
+httpx>=0.24
+starlette>=0.27
 pytest-asyncio
 Pillow
 mcp

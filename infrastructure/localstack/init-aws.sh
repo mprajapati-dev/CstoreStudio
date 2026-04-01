@@ -28,4 +28,16 @@ awslocal dynamodb create-table \
     --key-schema AttributeName=bidId,KeyType=HASH AttributeName=ticketId,KeyType=RANGE \
     --billing-mode PAY_PER_REQUEST
 
+awslocal dynamodb create-table \
+    --table-name Stores \
+    --attribute-definitions AttributeName=storeId,AttributeType=S \
+    --key-schema AttributeName=storeId,KeyType=HASH \
+    --billing-mode PAY_PER_REQUEST
+
+     # Add Categories table
+     awslocal dynamodb create-table \
+          --table-name Categories \
+          --attribute-definitions AttributeName=category,AttributeType=S \
+          --key-schema AttributeName=category,KeyType=HASH \
+          --billing-mode PAY_PER_REQUEST
 echo "LocalStack initialization complete. Tables created."
